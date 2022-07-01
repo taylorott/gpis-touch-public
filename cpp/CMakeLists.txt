@@ -1,6 +1,6 @@
 set(LIBRARY_NAME gpis)
 
-set(BOOST_ROOT "/home/suddhu/packages/boost_1_55_0")
+set(BOOST_ROOT "/usr/include/boost")
 find_package(Boost 1.55 REQUIRED)
 
 file(GLOB implementation_files "src/*.cpp")
@@ -9,7 +9,7 @@ message("headers:" "${header_files}")
 
 add_library(${LIBRARY_NAME} SHARED ${implementation_files})
 
-SET (EIGEN3_INCLUDE_DIR "/usr/include/eigen3/Eigen/src")
+SET (EIGEN3_INCLUDE_DIR "/home/taylorott/Documents/eigen-3.4.0")
 message("EIGEN PATH:" "${EIGEN3_INCLUDE_DIR}")
 
 include_directories(${Boost_INCLUDE_DIRS})

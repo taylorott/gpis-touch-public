@@ -19,6 +19,129 @@
 #include "GPShape.hpp"
 #include <algorithm>
 
+
+void GPShape::evalAtPoint(double x_point,double y_point){
+    int len1 = x_test.size1();
+    int len2 = x_test.size2();
+    double xmin = x_test(0,0);
+    double xmax = x_test(len1-1,0);
+    double ymin = y_test(0,0);
+    double ymax = y_test(0,len2-1);
+
+    // std::cout<<"("<<x_point<<","<<y_point<<")"<< std::endl;
+
+
+    int x_index = 0;
+    int y_index = 0;
+
+    double dx = (xmax-xmin)/((double) len1);
+    double dy = (ymax-ymin)/((double) len2);
+
+    double m_out = 0.0;
+    double c_out = 0.0;
+
+    // std::cout<<"xmin:"<<xmin<<",";
+    // std::cout<<"xmax:"<<xmax<<",";
+    // std::cout<<"ymin:"<<ymin<<",";
+    // std::cout<<"ymax:"<<ymax<<",";
+    // std::cout<<"dx:"<<dx<<",";
+    // std::cout<<"dy:"<<dy<<",";
+    // std::cout<<std::endl;    
+
+    if(x_point<=xmin){
+        x_index = 0;
+    }
+    if(x_point>=xmax){
+        x_index = len1-1;
+    }
+    if(xmin<x_point&&x_point<xmax){
+        int index1 = (int) floor((x_point-xmin)/dx);
+        int index2 = (int) ceil((x_point-xmin)/dx);
+
+        if(x_test(index2,0)-x_point>x_point-x_test(index1,0)){
+            x_index = index1;
+        }
+        else{
+            x_index = index2;
+        }
+    }
+    if(y_point<=ymin){
+        y_index = 0;
+    }
+    if(y_point>=ymax){
+        y_index = len2-1;
+    }
+    if(ymin<y_point&&y_point<ymax){
+        int index1 = (int) floor((y_point-ymin)/dy);
+        int index2 = (int) ceil((y_point-ymin)/dy);
+
+        if(y_test(0,index2)-y_point>y_point-y_test(0,index1)){
+            y_index = index1;
+        }
+        else{
+            y_index = index2;
+        }
+    }
+
+    Emx M, V, C;
+    int i = x_index*len2 + y_index;
+    std::vector<double> x_star = {x_point, y_point};
+
+    if (localExperts) {
+        Emx K_xStar; //= Emx::Zero(3*n, 3); // n is the number of training points
+        Emx K_xStar_xStar = Emx::Zero(3,3); // n is the number of training points
+
+
+        
+        getKxStar2(x_star, K_xStar_xStar);
+            
+        double m__ = 0.0; double c__ = 0.0; 
+
+        
+        for (int j = 0; j < nnGPValid[i].size(); ++j) {
+            int active_gp_id = nnGPValid[i][j]; 
+                
+            getKxStar(active_gp_id, x_star, K_xStar);     
+            M =  K_xStar.transpose() *  gps[active_gp_id]->alpha;   // mean equation
+            m__ += M(0, 0);
+
+            V = gps[active_gp_id]->Kxx_L.triangularView<Eigen::Lower>().solve(K_xStar);
+            C = K_xStar_xStar - V.transpose()*V;
+            c__ += C(0, 0);
+        }
+        m_out = m__/nnGPValid[i].size();
+        c_out = c__/nnGPValid[i].size();  // scale variance   
+    }
+    else{
+        Emx K_xStar = Emx::Zero(3*gps[0]->measurements.size(), 3); // n is the number of training points
+        Emx K_xStar_xStar = Emx::Zero(3,3); // n is the number of training points
+
+
+        getKxStar2(x_star, K_xStar_xStar);
+        getKxStar(0, x_star, K_xStar);    
+
+        M =  K_xStar.transpose() * gps[0]->alpha;   // mean equation
+        m_out = M(0, 0);
+        
+        V = gps[0]->Kxx_L.triangularView<Eigen::Lower>().solve(K_xStar);
+        C = K_xStar_xStar - V.transpose()*V;
+        c_out = C(0, 0);  // scale variance    
+        
+    }
+
+    std::cout<<"query point:("<<x_point<<","<<y_point<<") ";
+    std::cout<<"evaluates too:"<<m_out<<std::endl;
+
+    // std::cout<<"query point:("<<x_point<<","<<y_point<<") ";
+    // std::cout<<"nearest grid point:("<<x_test(x_index,y_index)<<","<<y_test(x_index,y_index)<<")"<<std::endl;
+
+
+    // std::cout<<x_test(x_test.size1()-1,x_test.size2()-1)<< std::endl;
+    
+    return;
+}
+
+
 // Update the Kxx kernel (3*N, 3*N) with scaled measurements. Add noise along
 // the diagonal elements. Mean and variance values must be unscaled to make
 // sense

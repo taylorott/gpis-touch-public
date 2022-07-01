@@ -178,6 +178,7 @@ public:
 
     ~GPShape(){};
 
+    void evalAtPoint(double x_point,double y_point);
     void buildAndQueryTree();
     void initGPs();
 

@@ -83,8 +83,9 @@ void plotResult(cnt contour, cnt ground_truth, Eigen::Vector2d contact_point, Ei
 
 int main(int argc, char** argv){
 
+
     // ifstream infile("/home/suddhu/software/GPIS/data/contacts/contacts-rect1-20200115-1026.txt");
-    ifstream infile("/home/suddhu/software/GPIS/data/contacts/contacts-rect1-20200810-1811.txt");
+    ifstream infile("/home/taylorott/Documents/gpis-touch-public/data/contacts/contacts-rect1-20200810-1811.txt");
     // ifstream infile("/home/suddhu/software/GPIS/data/contacts/contacts-rect1-20200810-1616.txt");
     // ifstream infile("/home/suddhu/software/GPIS/data/contacts/contacts-rect1-20200831-1244.txt");
     // ifstream infile("/home/suddhu/software/GPIS/data/contacts/contacts-rect1-20200831-1248.txt");
@@ -114,9 +115,12 @@ int main(int argc, char** argv){
     cnt contour; 
     Emx fMean, fVar; Evx contourVar;
 
+
     int t = 0;
+    // cout<<"hi";
     while (getline(infile, line_data))
     {
+        // cout<<"hello!";
         stringstream line_stream(line_data);
         double px, py, nx, ny; char comma;
         if (line_stream >> px >> comma >> py >> comma >> nx >> comma >> ny) {
@@ -127,6 +131,7 @@ int main(int argc, char** argv){
 
             if (updated)    gpshape->test(contour, fMean, fVar, contourVar);
             else            std::cout<<"skip testing!\n";
+            // cout<<"plotting result:";
             plotResult(contour, ground_truth, contact_point, contact_normal, shape_id, t);
         }
         t++;

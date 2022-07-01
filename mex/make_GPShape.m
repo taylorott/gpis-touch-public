@@ -1,4 +1,4 @@
-EIGEN_PATH = '/usr/include/eigen3/Eigen/src';
+EIGEN_PATH = '/home/taylorott/Documents/eigen-3.4.0';
 SRC = '../cpp/src';
 INC = '../cpp/include';
 
