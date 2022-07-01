@@ -20,15 +20,13 @@
 #include <algorithm>
 
 
-void GPShape::evalAtPoint(double x_point,double y_point){
+void GPShape::evalAtPoint(double x_point,double y_point,double* v_out,double* dvdx_out, double* dvdy_out){
     int len1 = x_test.size1();
     int len2 = x_test.size2();
     double xmin = x_test(0,0);
     double xmax = x_test(len1-1,0);
     double ymin = y_test(0,0);
     double ymax = y_test(0,len2-1);
-
-    // std::cout<<"("<<x_point<<","<<y_point<<")"<< std::endl;
 
 
     int x_index = 0;
@@ -40,13 +38,12 @@ void GPShape::evalAtPoint(double x_point,double y_point){
     double m_out = 0.0;
     double c_out = 0.0;
 
-    // std::cout<<"xmin:"<<xmin<<",";
-    // std::cout<<"xmax:"<<xmax<<",";
-    // std::cout<<"ymin:"<<ymin<<",";
-    // std::cout<<"ymax:"<<ymax<<",";
-    // std::cout<<"dx:"<<dx<<",";
-    // std::cout<<"dy:"<<dy<<",";
-    // std::cout<<std::endl;    
+    double delta_x = dx/100;
+    double delta_y = dy/100;
+
+    std::vector<double> x_list = {x_point,x_point+delta_x,x_point-delta_x,x_point,x_point};
+    std::vector<double> y_list = {y_point,y_point,y_point,y_point+delta_y,y_point-delta_y}; 
+    std::vector<double> v_list = {0.0,0.0,0.0,0.0,0.0};
 
     if(x_point<=xmin){
         x_index = 0;
@@ -83,60 +80,64 @@ void GPShape::evalAtPoint(double x_point,double y_point){
         }
     }
 
-    Emx M, V, C;
-    int i = x_index*len2 + y_index;
-    std::vector<double> x_star = {x_point, y_point};
-
-    if (localExperts) {
-        Emx K_xStar; //= Emx::Zero(3*n, 3); // n is the number of training points
-        Emx K_xStar_xStar = Emx::Zero(3,3); // n is the number of training points
+    for(int count=0;count<5;count++){
 
 
-        
-        getKxStar2(x_star, K_xStar_xStar);
-            
-        double m__ = 0.0; double c__ = 0.0; 
+        Emx M, V, C;
+        int i = x_index*len2 + y_index;
+        std::vector<double> x_star = {x_list[count], y_list[count]};
 
-        
-        for (int j = 0; j < nnGPValid[i].size(); ++j) {
-            int active_gp_id = nnGPValid[i][j]; 
+        if (localExperts) {
+            Emx K_xStar; //= Emx::Zero(3*n, 3); // n is the number of training points
+            Emx K_xStar_xStar = Emx::Zero(3,3); // n is the number of training points
+
+            getKxStar2(x_star, K_xStar_xStar);
                 
-            getKxStar(active_gp_id, x_star, K_xStar);     
-            M =  K_xStar.transpose() *  gps[active_gp_id]->alpha;   // mean equation
-            m__ += M(0, 0);
+            double m__ = 0.0; double c__ = 0.0; 
+            
+            for (int j = 0; j < nnGPValid[i].size(); ++j) {
+                int active_gp_id = nnGPValid[i][j]; 
+                    
+                getKxStar(active_gp_id, x_star, K_xStar);     
+                M =  K_xStar.transpose() *  gps[active_gp_id]->alpha;   // mean equation
+                m__ += M(0, 0);
 
-            V = gps[active_gp_id]->Kxx_L.triangularView<Eigen::Lower>().solve(K_xStar);
-            C = K_xStar_xStar - V.transpose()*V;
-            c__ += C(0, 0);
+                V = gps[active_gp_id]->Kxx_L.triangularView<Eigen::Lower>().solve(K_xStar);
+                C = K_xStar_xStar - V.transpose()*V;
+                c__ += C(0, 0);
+            }
+            m_out = m__/nnGPValid[i].size();
+            c_out = c__/nnGPValid[i].size();  // scale variance   
         }
-        m_out = m__/nnGPValid[i].size();
-        c_out = c__/nnGPValid[i].size();  // scale variance   
+        else{
+            Emx K_xStar = Emx::Zero(3*gps[0]->measurements.size(), 3); // n is the number of training points
+            Emx K_xStar_xStar = Emx::Zero(3,3); // n is the number of training points
+
+
+            getKxStar2(x_star, K_xStar_xStar);
+            getKxStar(0, x_star, K_xStar);    
+
+            M =  K_xStar.transpose() * gps[0]->alpha;   // mean equation
+            m_out = M(0, 0);
+            
+            V = gps[0]->Kxx_L.triangularView<Eigen::Lower>().solve(K_xStar);
+            C = K_xStar_xStar - V.transpose()*V;
+            c_out = C(0, 0);  // scale variance    
+            
+        }
+        v_list[count] = m_out;
     }
-    else{
-        Emx K_xStar = Emx::Zero(3*gps[0]->measurements.size(), 3); // n is the number of training points
-        Emx K_xStar_xStar = Emx::Zero(3,3); // n is the number of training points
+
+    *v_out = v_list[0];
+    *dvdx_out = (v_list[1]-v_list[2])/(2.0*delta_x);
+    *dvdy_out = (v_list[3]-v_list[4])/(2.0*delta_y);
 
 
-        getKxStar2(x_star, K_xStar_xStar);
-        getKxStar(0, x_star, K_xStar);    
+    // out_list[0] = v_list[0];
+    // out_list[1] = (v_list[1]-v_list[2])/(2.0*delta_x);
+    // out_list[2] = (v_list[3]-v_list[4])/(2.0*delta_y);
 
-        M =  K_xStar.transpose() * gps[0]->alpha;   // mean equation
-        m_out = M(0, 0);
-        
-        V = gps[0]->Kxx_L.triangularView<Eigen::Lower>().solve(K_xStar);
-        C = K_xStar_xStar - V.transpose()*V;
-        c_out = C(0, 0);  // scale variance    
-        
-    }
-
-    std::cout<<"query point:("<<x_point<<","<<y_point<<") ";
-    std::cout<<"evaluates too:"<<m_out<<std::endl;
-
-    // std::cout<<"query point:("<<x_point<<","<<y_point<<") ";
-    // std::cout<<"nearest grid point:("<<x_test(x_index,y_index)<<","<<y_test(x_index,y_index)<<")"<<std::endl;
-
-
-    // std::cout<<x_test(x_test.size1()-1,x_test.size2()-1)<< std::endl;
+    // std::cout<<out_list[0]<<","<<out_list[1]<<","<<out_list[2]<<std::endl;
     
     return;
 }

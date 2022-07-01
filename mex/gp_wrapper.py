@@ -26,6 +26,15 @@ class gp_wrapper(object):
 		lib.evalAtPoint.argtypes = [ctypes.c_double,ctypes.c_double]
 		lib.evalAtPoint.restype = ctypes.c_void_p
 
+		lib.evalAtPoint_value.argtypes = []
+		lib.evalAtPoint_value.restype = ctypes.c_double
+
+		lib.evalAtPoint_dvdx.argtypes = []
+		lib.evalAtPoint_dvdx.restype  = ctypes.c_double
+
+		lib.evalAtPoint_dvdy.argtypes = []
+		lib.evalAtPoint_dvdy.restype  = ctypes.c_double
+
 	def init_gp(self,pvar,priorvar,testLim, testRes,isLocal, priorRad):
 		lib.init_gp(pvar[0],pvar[1],pvar[2],priorvar[0],priorvar[1],priorvar[2],testLim, testRes,isLocal, priorRad)
 
@@ -34,6 +43,7 @@ class gp_wrapper(object):
 
 	def evalAtPoint(self,x,y):
 		lib.evalAtPoint(x,y)
+		return np.array([lib.evalAtPoint_value(),lib.evalAtPoint_dvdx(),lib.evalAtPoint_dvdy()])
 
 	def update_contour(self):
 		lib.update_contour()

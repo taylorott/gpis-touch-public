@@ -37,6 +37,10 @@ static bool has_eval_contour = false;
 static std::chrono::high_resolution_clock::time_point t_start;
 static std::chrono::high_resolution_clock::time_point t_end;
 static double t_dur = 0.0;
+// static std::vector<double> out_list = {0.0,0.0,0.0};
+static double v = 0.0;
+static double dvdx = 0.0;
+static double dvdy = 0.0;
 
 void init(double pvar1,double pvar2,double pvar3, double priorvar1, double priorvar2, double priorvar3, double testLim,double testRes,bool isLocal, double priorRad) {
 
@@ -76,12 +80,19 @@ void update(double x,double y,double nx,double ny) {
 }
 
 void evalAtPoint_internal(double x,double y){
-    t_start = std::chrono::high_resolution_clock::now();
-    gp->evalAtPoint(x,y);
-    t_end= std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(t_end-t_start); // reset
-    t_dur = time_diff.count();
-    std::cout<<"execution time: "<<t_dur<<std::endl;
+    gp->evalAtPoint(x,y,&v,&dvdx,&dvdy);
+}
+
+double evalAtPoint_value_internal(){
+    return v;
+}
+
+double evalAtPoint_dvdx_internal(){
+    return dvdx;
+}
+
+double evalAtPoint_dvdy_internal(){
+    return dvdy;
 }
 
 void update_contour_internal(){
@@ -156,6 +167,18 @@ extern "C"
 
     void evalAtPoint(double x,double y){
         evalAtPoint_internal(x,y);
+    }
+
+    double evalAtPoint_value(){
+        return evalAtPoint_value_internal();
+    }
+
+    double evalAtPoint_dvdx(){
+        return evalAtPoint_dvdx_internal();
+    }
+
+    double evalAtPoint_dvdy(){
+        return evalAtPoint_dvdy_internal();
     }
 }
 

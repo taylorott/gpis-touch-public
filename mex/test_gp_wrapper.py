@@ -25,18 +25,28 @@ if __name__ == '__main__':
         pos_vec = [float(num_list[0]),float(num_list[1])]
         normal_vec = [float(num_list[2]),float(num_list[3])]
 
-        my_gp.evalAtPoint(pos_vec[0],pos_vec[1])
-        # my_gp.update_gp(pos_vec,normal_vec)
-        # contour_x,contour_y = my_gp.eval_contour()
+        current_val = [-.03,-0.04]
+        # print('hi!')
+        for i in range(10):
+            func_val = my_gp.evalAtPoint(current_val[0],current_val[1])
+            alpha = func_val[0]/(func_val[1]**2+func_val[2]**2)
+            current_val = [current_val[0]-func_val[1]*alpha,current_val[1]-func_val[2]*alpha]
+            # print(current_val)
+        # print (func_val)
+        # print('hello!')
+        my_gp.update_gp(pos_vec,normal_vec)
+        # print('boogah boogah!')
+        contour_x,contour_y = my_gp.eval_contour()
 
-        # axs.cla()
-        # axs.plot(contour_x,contour_y)
-        # axs.axis("equal")
+        axs.cla()
+        axs.plot(contour_x,contour_y)
+        axs.plot(current_val[0],current_val[1],'ro')
+        axs.axis("equal")
 
-        # axs.set_ylim([-0.09, 0.09])
-        # axs.set_xlim([-0.09, 0.09])
+        axs.set_ylim([-0.09, 0.09])
+        axs.set_xlim([-0.09, 0.09])
 
-        # plt.pause(0.01)
+        plt.pause(0.01)
 
 
 
