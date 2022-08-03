@@ -6,6 +6,6 @@
 
 %% Output:
 % data_output: N x 4;
-function GPFiltering2D(X, Y, varNoise, R, shape_data, Scale, Mean)
-    evaluateAndPlot(X, Y, Scale, Mean, R, varNoise, shape_data, 1.0, 0.05);
+function GPFiltering2D(X, Y, varNoise, R, shape_data, Scale, Mean,plot_bool)
+    evaluateAndPlot(X, Y, Scale, Mean, R, varNoise, shape_data, 1.0, 0.05,plot_bool);
 end

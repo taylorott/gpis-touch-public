@@ -35,11 +35,13 @@ end
 
 varNoise = [1e-4, 1e-4, 1e-4]; % measurement noise
 
+
+plot_bool = 0
 for i = 2:size(data,1)
     R = 1.1*max(pdist(data(1:i, :),'euclidean')); % kernel parameter (max dist in the set of points)
     [new_data, inputmean, inputscale] = center_and_normalize_data(data(1:i, :)); % preprocess data
     curr_X = new_data(:,1:2);
     curr_Y = reshape([zeros(size(new_data(:,3:4),1), 1)' ; new_data(:,3:4)'], [], 1);
-    GPFiltering2D(curr_X, curr_Y, varNoise, R, shape_data, inputscale, inputmean);   
+    GPFiltering2D(curr_X, curr_Y, varNoise, R, shape_data, inputscale, inputmean,i==size(data,1));   
 end
 
